@@ -9,6 +9,7 @@ const int led2 = PA0;
 /*
 
 In order to make max raw(decoded) message == 250:
+
 cdc_queue.h:
 #define CDC_TRANSMIT_QUEUE_BUFFER_SIZE ((uint16_t)(CDC_QUEUE_MAX_PACKET_SIZE * 8))
 #define CDC_RECEIVE_QUEUE_BUFFER_SIZE ((uint16_t)(CDC_QUEUE_MAX_PACKET_SIZE * 8))
@@ -68,6 +69,7 @@ int command_processor(const uint8_t *message, uint32_t message_length, uint8_t *
     {
       //result overflow, do not return any data.
       ret = 0;
+      result[0] = 0x00;
     }
     if (ret > 0)
     {
