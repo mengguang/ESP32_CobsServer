@@ -6,6 +6,15 @@
 const int led = LED_BUILTIN;
 const int led2 = PA0;
 
+/*
+
+In order to make max raw(decoded) message == 250:
+cdc_queue.h:
+#define CDC_TRANSMIT_QUEUE_BUFFER_SIZE ((uint16_t)(CDC_QUEUE_MAX_PACKET_SIZE * 8))
+#define CDC_RECEIVE_QUEUE_BUFFER_SIZE ((uint16_t)(CDC_QUEUE_MAX_PACKET_SIZE * 8))
+
+*/
+
 HardwareSerial SerialJlink(PB11, PB10);
 
 #define SerialDebug SerialJlink
