@@ -92,6 +92,11 @@ int command_processor(const uint8_t *message, uint32_t message_length, uint8_t *
 
 void hex_dump(const uint8_t *data, uint32_t length)
 {
+  SerialDebug.printf("length: %u\n", length);
+  if (length > 16)
+  {
+    length = 16;
+  }
   for (uint32_t i = 0; i < length; i++)
   {
     SerialDebug.printf("%02X ", data[i]);
@@ -154,7 +159,7 @@ void setup()
 uint32_t last = millis();
 void loop()
 {
-  if (SerialComm.available())
+  while (SerialComm.available())
   {
     int c = SerialComm.read();
     if (c < 0)
@@ -165,12 +170,11 @@ void loop()
     {
       messager.message_decoder_fill_data(c);
     }
-    delay(1);
   }
+  delay(1);
   if (millis() > last + 500)
   {
     last = millis();
     digitalToggle(led);
   }
-  delay(1);
 }
