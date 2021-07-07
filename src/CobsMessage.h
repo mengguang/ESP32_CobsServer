@@ -5,8 +5,10 @@
 #include <cstdio>
 #include <cstring>
 
-#define MAX_ENCODED_MESSAGE_SIZE 253
 #define MAX_DECODED_MESSAGE_SIZE 250
+#define MAX_ENCODED_MESSAGE_SIZE COBS_ENCODE_DST_BUF_LEN_MAX(MAX_DECODED_MESSAGE_SIZE)
+
+#define RECEIVE_BUFFER_SIZE (MAX_ENCODED_MESSAGE_SIZE + 2)
 
 class CobsMessage
 {
@@ -45,8 +47,9 @@ public:
     }
     bool decode_and_process_message(uint8_t *encoded_message, uint32_t encoded_message_length)
     {
-        uint8_t decoded_message_buffer[MAX_DECODED_MESSAGE_SIZE] = {0};
-        cobs_decode_result result = cobs_decode(decoded_message_buffer, sizeof(decoded_message_buffer), encoded_message, encoded_message_length);
+        //in-place decoding
+        uint8_t *decoded_message_buffer = received_message_buffer;
+        cobs_decode_result result = cobs_decode(decoded_message_buffer, MAX_DECODED_MESSAGE_SIZE, encoded_message, encoded_message_length);
         if (result.status == COBS_DECODE_OK)
         {
             return message_processor(decoded_message_buffer, (uint32_t)(result.out_len));
@@ -80,7 +83,7 @@ public:
     }
 
 protected:
-    uint8_t received_message_buffer[MAX_ENCODED_MESSAGE_SIZE];
+    uint8_t received_message_buffer[RECEIVE_BUFFER_SIZE];
 
 private:
     uint32_t n_received = 0;
