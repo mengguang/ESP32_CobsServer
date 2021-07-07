@@ -2,6 +2,7 @@
 #include "CobsMessage.h"
 #include "Arduino.h"
 #include "Wire.h"
+#include "SPI.h"
 
 class ArduinoMessage : public CobsMessage
 {
@@ -135,6 +136,69 @@ public:
             result[0] = 0x01;
             result[1] = ret;
             reply_length = CMD_WIRE_TRANSMISSION_RL;
+            break;
+        }
+
+        case CMD_SPI_BEGIN:
+        {
+            uint8_t mosi = message[1];
+            uint8_t miso = message[2];
+            uint8_t sclk = message[3];
+            SPI.setMOSI(mosi);
+            SPI.setMISO(miso);
+            SPI.setSCLK(sclk);
+            SPI.begin();
+            result[0] = 0x01;
+            reply_length = CMD_SPI_BEGIN_RL;
+            break;
+        }
+        case CMD_SPI_END:
+        {
+            SPI.end();
+            result[0] = 0x01;
+            reply_length = CMD_SPI_END_RL;
+            break;
+        }
+        case CMD_SPI_BEGIN_TRANSACTION:
+        {
+            //4 bytes clock(MSB), 1 byte bitOrder, 1 byte dataMode
+            uint32_t clock = 0;
+            clock += message[1] << 24;
+            clock += message[2] << 16;
+            clock += message[3] << 8;
+            clock += message[4];
+            BitOrder bitOrder = message[5] == 0 ? LSBFIRST : MSBFIRST;
+            uint8_t dataMode = message[6];
+            auto s = SPISettings(clock, bitOrder, dataMode);
+            SPI.beginTransaction(s);
+            result[0] = 0x01;
+            reply_length = CMD_SPI_BEGIN_TRANSACTION_RL;
+            break;
+        }
+        case CMD_SPI_END_TRANSACTION:
+        {
+            SPI.endTransaction();
+            result[0] = 0x01;
+            reply_length = CMD_SPI_END_TRANSACTION_RL;
+            break;
+        }
+        case CMD_SPI_TRANSFER:
+        {
+            uint32_t data_length = message_length - 1;
+            if (data_length > 0)
+            {
+                uint8_t spi_buffer[MAX_ENCODED_MESSAGE_SIZE] = {0};
+                memcpy(spi_buffer, message + 1, data_length);
+                SPI.transfer(spi_buffer, data_length);
+                result[0] = 0x01;
+                memcpy(result + 1, spi_buffer, data_length);
+                reply_length = 1 + data_length;
+            }
+            else
+            {
+                result[0] = 0x00;
+                reply_length = 1;
+            }
             break;
         }
 

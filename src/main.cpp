@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "ArduinoMessage.h"
 
-const int led = LED_BUILTIN;
+// const int led = LED_BUILTIN;
 
 /*
 
@@ -23,7 +23,7 @@ ArduinoMessage messager(&SerialComm, &SerialDebug);
 void setup()
 {
   SerialDebug.begin(115200);
-  pinMode(led, OUTPUT);
+  // pinMode(led, OUTPUT);
 
   SerialComm.begin(115200);
 }
@@ -47,6 +47,6 @@ void loop()
   if (millis() > last + 500)
   {
     last = millis();
-    digitalToggle(led);
+    // digitalToggle(led);
   }
 }
