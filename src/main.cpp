@@ -118,7 +118,7 @@ public:
     // SerialDebug.print("send back encoded data:\n");
     // hex_dump(data, length);
     int n = SerialComm.write(data, length);
-    SerialDebug.printf("write back size: %d\n", n);
+    // SerialDebug.printf("write back size: %d\n", n);
     return true;
   }
   bool message_processor(const uint8_t *data, uint32_t length)
@@ -126,10 +126,8 @@ public:
     SerialDebug.print("request: \n");
     hex_dump(data, length);
 
-    //uint8_t reply_buffer[256] = {0};
-    // int reply_length = command_processor(data, length, reply_buffer, sizeof(reply_buffer));
-
     //reuse receive buffer
+    //+ ENCODE_OFFSET enable in-place encoding
     uint8_t *reply_buffer = received_message_buffer + ENCODE_OFFSET;
     int reply_length = command_processor(data, length, reply_buffer, MAX_DECODED_MESSAGE_SIZE);
     if (reply_length <= 0)
@@ -165,7 +163,6 @@ void loop()
     }
     else
     {
-      // SerialDebug.printf("%02X\n", c);
       messager.message_decoder_fill_data(c);
     }
     delay(1);
@@ -173,7 +170,7 @@ void loop()
   if (millis() > last + 500)
   {
     last = millis();
-    // digitalToggle(led);
+    digitalToggle(led);
   }
   delay(1);
 }
