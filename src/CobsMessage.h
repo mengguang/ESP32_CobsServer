@@ -79,8 +79,10 @@ public:
         }
     }
 
+protected:
+    uint8_t received_message_buffer[MAX_ENCODED_MESSAGE_SIZE];
+
 private:
     uint32_t n_received = 0;
-    uint8_t received_message_buffer[MAX_ENCODED_MESSAGE_SIZE];
     char debug_message[250];
 };

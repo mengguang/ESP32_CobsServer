@@ -55,8 +55,14 @@ int command_processor(const uint8_t *message, uint32_t message_length, uint8_t *
     uint8_t ret = Wire.requestFrom(address, n_read);
     result[0] = 0x01;
     result[1] = ret; //read back length
+    if (ret + 2 > result_length)
+    {
+      //result overflow, do not return any data.
+      ret = 0;
+    }
     if (ret > 0)
     {
+
       Wire.readBytes(result + 2, ret);
     }
     reply_length = 2 + ret;
@@ -109,7 +115,7 @@ public:
   }
   bool message_send_writer(const uint8_t *data, uint32_t length)
   {
-    // SerialDebug.print("send back:\n");
+    // SerialDebug.print("send back encoded data:\n");
     // hex_dump(data, length);
     int n = SerialComm.write(data, length);
     SerialDebug.printf("write back size: %d\n", n);
@@ -117,20 +123,22 @@ public:
   }
   bool message_processor(const uint8_t *data, uint32_t length)
   {
-    SerialDebug.print("message: \n");
+    SerialDebug.print("request: \n");
     hex_dump(data, length);
 
-    uint8_t reply_buffer[256] = {0};
-    int reply_length = command_processor(data, length, reply_buffer, sizeof(reply_buffer));
-    if (reply_buffer <= 0)
+    //uint8_t reply_buffer[256] = {0};
+    // int reply_length = command_processor(data, length, reply_buffer, sizeof(reply_buffer));
+
+    //reuse receive buffer
+    int reply_length = command_processor(data, length, received_message_buffer, sizeof(received_message_buffer));
+    if (reply_length <= 0)
     {
       debug_printf("command processor error: %d\n", reply_length);
       return false;
     }
     SerialDebug.print("reply: \n");
-    hex_dump(reply_buffer, reply_length);
-    return send_message(reply_buffer, reply_length);
-    // return true;
+    hex_dump(received_message_buffer, reply_length);
+    return send_message(received_message_buffer, reply_length);
   }
 };
 
