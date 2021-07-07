@@ -123,7 +123,6 @@ public:
     // SerialDebug.print("send back encoded data:\n");
     // hex_dump(data, length);
     int n = SerialComm.write(data, length);
-    // SerialDebug.printf("write back size: %d\n", n);
     return true;
   }
   bool message_processor(const uint8_t *data, uint32_t length)
