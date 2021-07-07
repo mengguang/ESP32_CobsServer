@@ -130,15 +130,16 @@ public:
     // int reply_length = command_processor(data, length, reply_buffer, sizeof(reply_buffer));
 
     //reuse receive buffer
-    int reply_length = command_processor(data, length, received_message_buffer, sizeof(received_message_buffer));
+    uint8_t *reply_buffer = received_message_buffer + ENCODE_OFFSET;
+    int reply_length = command_processor(data, length, reply_buffer, MAX_DECODED_MESSAGE_SIZE);
     if (reply_length <= 0)
     {
       debug_printf("command processor error: %d\n", reply_length);
       return false;
     }
     SerialDebug.print("reply: \n");
-    hex_dump(received_message_buffer, reply_length);
-    return send_message(received_message_buffer, reply_length);
+    hex_dump(reply_buffer, reply_length);
+    return send_message(reply_buffer, reply_length);
   }
 };
 

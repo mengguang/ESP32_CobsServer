@@ -10,6 +10,8 @@
 
 #define RECEIVE_BUFFER_SIZE (MAX_ENCODED_MESSAGE_SIZE + 2)
 
+#define ENCODE_OFFSET COBS_ENCODE_SRC_OFFSET(MAX_DECODED_MESSAGE_SIZE)
+
 class CobsMessage
 {
 public:
@@ -29,8 +31,10 @@ public:
 
     bool send_message(uint8_t *data, uint32_t data_length)
     {
-        uint8_t encoded_message_buffer[MAX_ENCODED_MESSAGE_SIZE + 1];
-        memset(encoded_message_buffer, 0, sizeof(encoded_message_buffer));
+        // uint8_t encoded_message_buffer[MAX_ENCODED_MESSAGE_SIZE + 1];
+        // memset(encoded_message_buffer, 0, sizeof(encoded_message_buffer));
+        //in-place encoding
+        uint8_t *encoded_message_buffer = received_message_buffer;
         cobs_encode_result result = cobs_encode(encoded_message_buffer, MAX_ENCODED_MESSAGE_SIZE, data, data_length);
         if (result.status != COBS_ENCODE_OK)
         {
@@ -38,6 +42,7 @@ public:
             return false;
         }
         // Serial1.write(encoded_message_buffer, result.out_len + 1);
+        encoded_message_buffer[result.out_len] = 0; // no need to memset zero.
         message_send_writer(encoded_message_buffer, (uint32_t)(result.out_len + 1));
         return true;
     }
