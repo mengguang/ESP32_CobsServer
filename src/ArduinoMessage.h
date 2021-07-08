@@ -7,29 +7,39 @@
 class ArduinoMessage : public CobsMessage
 {
 private:
-    Stream *serialComm;
-    Stream *serialDebug;
+    Stream *serialComm = nullptr;
+    Stream *serialDebug = nullptr;
+    bool debug = false;
 
 public:
-    ArduinoMessage(Stream *_serialComm, Stream *_serialDebug)
+    ArduinoMessage(Stream *_serialComm, Stream *_serialDebug = nullptr)
     {
         serialComm = _serialComm;
         serialDebug = _serialDebug;
     }
+
+    void set_debug(bool _debug)
+    {
+        debug = _debug;
+    }
+
     void debug_message_writer(const char *message)
     {
-        serialDebug->print(message);
+        if (debug && serialDebug)
+        {
+            serialDebug->print(message);
+        }
     }
     bool message_send_writer(const uint8_t *data, uint32_t length)
     {
-        // serialDebug->print("send back encoded data:\n");
+        // debug_printf("send back encoded data:\n");
         // hex_dump(data, length);
         int n = serialComm->write(data, length);
         return true;
     }
     bool message_processor(const uint8_t *data, uint32_t length)
     {
-        serialDebug->print("request: \n");
+        debug_printf("request: \n");
         hex_dump(data, length);
 
         //reuse receive buffer
@@ -41,28 +51,28 @@ public:
             debug_printf("command processor error: %d\n", reply_length);
             return false;
         }
-        serialDebug->print("reply: \n");
+        debug_printf("reply: \n");
         hex_dump(reply_buffer, reply_length);
         return send_message(reply_buffer, reply_length);
     }
     void hex_dump(const uint8_t *data, uint32_t length)
     {
-        serialDebug->printf("length: %u\n", length);
+        debug_printf("length: %u\n", length);
         if (length > 16)
         {
             length = 16;
         }
         for (uint32_t i = 0; i < length; i++)
         {
-            serialDebug->printf("%02X ", data[i]);
+            debug_printf("%02X ", data[i]);
             if ((i + 1) % 16 == 0)
             {
-                serialDebug->printf("\n");
+                debug_printf("\n");
             }
         }
         if (length % 16 != 0)
         {
-            serialDebug->printf("\n");
+            debug_printf("\n");
         }
     }
     int command_processor(const uint8_t *message, uint32_t message_length, uint8_t *result, uint32_t result_length)
@@ -71,6 +81,14 @@ public:
         int reply_length = 0;
         switch (cmd)
         {
+        case CMD_SYS_SET_DEBUG:
+        {
+            bool _debug = (message[1] != 0);
+            set_debug(_debug);
+            result[0] = 0x01;
+            reply_length = CMD_SYS_SET_DEBUG_RL;
+            break;
+        }
         case CMD_PIN_MODE:
         {
             pinMode(message[1], message[2]);
