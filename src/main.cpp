@@ -29,24 +29,26 @@ void setup()
 }
 
 uint32_t last = millis();
+int n_avail = 0;
+uint8_t temp_buffer[32];
 void loop()
 {
-  while (SerialComm.available())
+  while ((n_avail = SerialComm.available()) > 0)
   {
-    int c = SerialComm.read();
-    if (c < 0)
+    if (n_avail > sizeof(temp_buffer))
     {
-      SerialDebug.printf("Serial1 read error: %d\n", c);
+      n_avail = sizeof(temp_buffer);
     }
-    else
+    int n_read = SerialComm.readBytes((char *)temp_buffer, n_avail);
+    for (int i = 0; i < n_read; i++)
     {
-      messager.message_decoder_fill_data(c);
+      messager.message_decoder_fill_data(temp_buffer[i]);
     }
   }
-  delay(1);
-  if (millis() > last + 500)
-  {
-    last = millis();
-    // digitalToggle(led);
-  }
+  // delay(1);
+  // if (millis() > last + 500)
+  // {
+  //   last = millis();
+  //   // digitalToggle(led);
+  // }
 }
