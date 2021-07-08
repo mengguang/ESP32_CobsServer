@@ -46,14 +46,21 @@ public:
         //+ ENCODE_OFFSET enable in-place encoding
         uint8_t *reply_buffer = received_message_buffer + ENCODE_OFFSET;
         int reply_length = command_processor(data, length, reply_buffer, MAX_DECODED_MESSAGE_SIZE);
-        if (reply_length <= 0)
+        if (reply_length < 0)
         {
             debug_printf("command processor error: %d\n", reply_length);
             return false;
         }
-        debug_printf("reply: \n");
-        hex_dump(reply_buffer, reply_length);
-        return send_message(reply_buffer, reply_length);
+        else if (reply_length > 0)
+        {
+            debug_printf("reply: \n");
+            hex_dump(reply_buffer, reply_length);
+            return send_message(reply_buffer, reply_length);
+        }
+        else
+        { //no need reply
+            return true;
+        }
     }
     void hex_dump(const uint8_t *data, uint32_t length)
     {
@@ -98,9 +105,16 @@ public:
         }
         case CMD_DIGITAL_WRITE:
         {
-            digitalWrite(message[1], message[2]);
+            uint8_t pin = message[1];
+            uint8_t value = message[2];
+            bool need_reply = message[3];
+            digitalWrite(pin, value);
             result[0] = 0x01;
             reply_length = CMD_DIGITAL_WRITE_RL;
+            if (!need_reply)
+            {
+                reply_length = 0;
+            }
             break;
         }
         case CMD_DIGITAL_READ:
@@ -221,21 +235,24 @@ public:
         }
         case CMD_SPI_WRITE:
         {
-            uint32_t data_length = message_length - 1;
+            bool need_reply = message[1];
+            uint32_t data_length = message_length - 2;
             if (data_length > 0)
             {
                 uint8_t spi_buffer[MAX_ENCODED_MESSAGE_SIZE] = {0};
-                memcpy(spi_buffer, message + 1, data_length);
+                memcpy(spi_buffer, message + 2, data_length);
                 SPI.transfer(spi_buffer, data_length);
                 result[0] = 0x01;
-                // memcpy(result + 1, spi_buffer, data_length);
-                // reply_length = 1 + data_length;
                 reply_length = CMD_SPI_WRITE_RL;
             }
             else
             {
                 result[0] = 0x00;
                 reply_length = 1;
+            }
+            if (!need_reply)
+            {
+                reply_length = 0;
             }
             break;
         }
