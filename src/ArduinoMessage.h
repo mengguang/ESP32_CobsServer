@@ -201,6 +201,44 @@ public:
             }
             break;
         }
+        case CMD_SPI_WRITE:
+        {
+            uint32_t data_length = message_length - 1;
+            if (data_length > 0)
+            {
+                uint8_t spi_buffer[MAX_ENCODED_MESSAGE_SIZE] = {0};
+                memcpy(spi_buffer, message + 1, data_length);
+                SPI.transfer(spi_buffer, data_length);
+                result[0] = 0x01;
+                // memcpy(result + 1, spi_buffer, data_length);
+                // reply_length = 1 + data_length;
+                reply_length = CMD_SPI_WRITE_RL;
+            }
+            else
+            {
+                result[0] = 0x00;
+                reply_length = 1;
+            }
+            break;
+        }
+        case CMD_SPI_READ:
+        {
+            uint8_t data_length = message[1];
+            if (data_length > 0)
+            {
+                uint8_t spi_buffer[MAX_ENCODED_MESSAGE_SIZE] = {0};
+                SPI.transfer(spi_buffer, data_length);
+                result[0] = 0x01;
+                memcpy(result + 1, spi_buffer, data_length);
+                reply_length = 1 + data_length;
+            }
+            else
+            {
+                result[0] = 0x00;
+                reply_length = 1;
+            }
+            break;
+        }
 
         default:
             break;
