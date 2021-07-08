@@ -149,7 +149,6 @@ public:
             }
             if (ret > 0)
             {
-
                 Wire.readBytes(result + 2, ret);
             }
             reply_length = 2 + ret;
@@ -229,14 +228,14 @@ public:
             else
             {
                 result[0] = 0x00;
-                reply_length = 1;
+                reply_length = 1 + data_length;
             }
             break;
         }
         case CMD_SPI_WRITE:
         {
             bool need_reply = message[1];
-            uint32_t data_length = message_length - 2;
+            uint8_t data_length = message_length - 2;
             if (data_length > 0)
             {
                 uint8_t spi_buffer[MAX_ENCODED_MESSAGE_SIZE] = {0};
@@ -248,7 +247,7 @@ public:
             else
             {
                 result[0] = 0x00;
-                reply_length = 1;
+                reply_length = CMD_SPI_WRITE_RL;
             }
             if (!need_reply)
             {
@@ -270,7 +269,7 @@ public:
             else
             {
                 result[0] = 0x00;
-                reply_length = 1;
+                reply_length = 1 + data_length;
             }
             break;
         }
