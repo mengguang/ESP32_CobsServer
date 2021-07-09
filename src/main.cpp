@@ -1,7 +1,10 @@
 #include <Arduino.h>
 #include "ArduinoMessage.h"
+#include <WifiManager.h>
 
 const int led = LED_BUILTIN;
+
+WiFiManager wm;
 
 HardwareSerial SerialJlink(1);
 
@@ -23,6 +26,22 @@ void setup()
   SerialComm.setRxBufferSize(4096);
   SerialComm.begin(921600, SERIAL_8N1, 27, 26);
   pinMode(led, OUTPUT);
+
+  // explicitly set mode, esp defaults to STA+AP
+  WiFi.mode(WIFI_STA);
+  //reset settings - wipe credentials for testing
+  //wm.resetSettings();
+  wm.setConfigPortalBlocking(false);
+  //automatically connect using saved credentials if they exist
+  //If connection fails it starts an access point with the specified name
+  if (wm.autoConnect("ESP32Processor", "88888888"))
+  {
+    Serial.println("connected...yeey :)");
+  }
+  else
+  {
+    Serial.println("Configportal running");
+  }
 }
 
 uint32_t last = millis();
@@ -31,6 +50,7 @@ uint8_t temp_buffer[32];
 uint8_t led_status = 1;
 void loop()
 {
+  wm.process();
   while ((n_avail = SerialComm.available()) > 0)
   {
     if (n_avail > sizeof(temp_buffer))
