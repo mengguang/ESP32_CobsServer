@@ -3,6 +3,7 @@
 #include "Arduino.h"
 #include "Wire.h"
 #include "SPI.h"
+#include <FunctionalInterrupt.h>
 
 class InterruptHandler
 {
@@ -26,10 +27,11 @@ private:
 
 class ArduinoMessage : public CobsMessage
 {
+
 private:
     Stream *serialComm = nullptr;
     Stream *serialDebug = nullptr;
-    bool debug = false;
+    bool debug = true;
     InterruptHandler interruprHandler[MAX_INTERRUPT_NUMBER];
 
 public:
@@ -56,7 +58,7 @@ public:
         // debug_printf("send back encoded data:\n");
         // hex_dump(data, length);
         int n = serialComm->write(data, length);
-        return true;
+        return n == length;
     }
     bool message_processor(const uint8_t *data, uint32_t length)
     {
@@ -191,7 +193,8 @@ public:
                 interruprHandler[id].attached = true;
                 interruprHandler[id].pin = pin;
                 interruprHandler[id].triggered = false;
-                callback_function_t callback = std::bind(&InterruptHandler::handler, &(interruprHandler[id]));
+                // callback_function_t callback = std::bind(&InterruptHandler::handler, &(interruprHandler[id]));
+                auto callback = std::bind(&InterruptHandler::handler, &(interruprHandler[id]));
                 attachInterrupt(pin, callback, mode);
                 result[0] = 0x01;
                 reply_length = CMD_DIGITAL_ATTACH_INTERRUPT_RL;
@@ -267,10 +270,12 @@ public:
             uint8_t mosi = message[1];
             uint8_t miso = message[2];
             uint8_t sclk = message[3];
-            SPI.setMOSI(mosi);
-            SPI.setMISO(miso);
-            SPI.setSCLK(sclk);
-            SPI.begin();
+            // SPI.setMOSI(mosi);
+            // SPI.setMISO(miso);
+            // SPI.setSCLK(sclk);
+            // SPI.begin();
+            // SPI.end();
+            SPI.begin(sclk, miso, mosi);
             result[0] = 0x01;
             reply_length = CMD_SPI_BEGIN_RL;
             break;
@@ -290,9 +295,11 @@ public:
             clock += message[2] << 16;
             clock += message[3] << 8;
             clock += message[4];
-            BitOrder bitOrder = message[5] == 0 ? LSBFIRST : MSBFIRST;
+            // BitOrder bitOrder = message[5] == 0 ? LSBFIRST : MSBFIRST;
+            uint8_t bitOrder = message[5];
             uint8_t dataMode = message[6];
             auto s = SPISettings(clock, bitOrder, dataMode);
+            SPI.endTransaction();
             SPI.beginTransaction(s);
             result[0] = 0x01;
             reply_length = CMD_SPI_BEGIN_TRANSACTION_RL;

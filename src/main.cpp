@@ -1,36 +1,29 @@
 #include <Arduino.h>
 #include "ArduinoMessage.h"
 
-// const int led = LED_BUILTIN;
+const int led = LED_BUILTIN;
 
-/*
+HardwareSerial SerialJlink(1);
 
-In order to make max raw(decoded) message == 250:
-
-cdc_queue.h:
-#define CDC_TRANSMIT_QUEUE_BUFFER_SIZE ((uint16_t)(CDC_QUEUE_MAX_PACKET_SIZE * 8))
-#define CDC_RECEIVE_QUEUE_BUFFER_SIZE ((uint16_t)(CDC_QUEUE_MAX_PACKET_SIZE * 8))
-
-*/
-
-HardwareSerial SerialJlink(PB11, PB10);
-
-#define SerialDebug SerialJlink
-#define SerialComm Serial
+// #define SerialDebug SerialJlink
+// #define SerialComm Serial
+#define SerialDebug Serial
+#define SerialComm SerialJlink
 
 ArduinoMessage messager(&SerialComm, &SerialDebug);
 
 void setup()
 {
   SerialDebug.begin(115200);
-  // pinMode(led, OUTPUT);
-
-  SerialComm.begin(115200);
+  SerialComm.setRxBufferSize(4096);
+  SerialComm.begin(921600, SERIAL_8N1, 27, 26);
+  pinMode(led, OUTPUT);
 }
 
 uint32_t last = millis();
 int n_avail = 0;
 uint8_t temp_buffer[32];
+uint8_t led_status = 1;
 void loop()
 {
   while ((n_avail = SerialComm.available()) > 0)
@@ -46,9 +39,12 @@ void loop()
     }
   }
   // delay(1);
-  // if (millis() > last + 500)
-  // {
-  //   last = millis();
-  //   // digitalToggle(led);
-  // }
+  if (millis() > last + 500)
+  {
+    last = millis();
+    digitalWrite(led, led_status);
+    led_status = 1 - led_status;
+    // SerialDebug.println(millis());
+    // SerialComm.println(millis());
+  }
 }
