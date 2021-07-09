@@ -4,12 +4,33 @@
 #include "Wire.h"
 #include "SPI.h"
 
+class InterruptHandler
+{
+public:
+    uint8_t pin;
+    bool attached = false;
+    bool triggered = false;
+
+    void handler()
+    {
+        triggered = true;
+    }
+
+    bool has_triggered()
+    {
+        return attached && triggered;
+    }
+
+private:
+};
+
 class ArduinoMessage : public CobsMessage
 {
 private:
     Stream *serialComm = nullptr;
     Stream *serialDebug = nullptr;
     bool debug = false;
+    InterruptHandler interruprHandler[MAX_INTERRUPT_NUMBER];
 
 public:
     ArduinoMessage(Stream *_serialComm, Stream *_serialDebug = nullptr)
@@ -46,21 +67,45 @@ public:
         //+ ENCODE_OFFSET enable in-place encoding
         uint8_t *reply_buffer = received_message_buffer + ENCODE_OFFSET;
         int reply_length = command_processor(data, length, reply_buffer, MAX_DECODED_MESSAGE_SIZE);
+        bool ret = false;
         if (reply_length < 0)
         {
             debug_printf("command processor error: %d\n", reply_length);
-            return false;
+            ret = false;
         }
         else if (reply_length > 0)
         {
             debug_printf("reply: \n");
             hex_dump(reply_buffer, reply_length);
-            return send_message(reply_buffer, reply_length);
+            ret = send_message(reply_buffer, reply_length);
+            check_and_send_interrupt_message();
         }
         else
         { //no need reply
-            return true;
+            ret = true;
         }
+
+        return ret;
+    }
+    bool check_and_send_interrupt_message()
+    {
+        uint8_t result[EVENT_MESSAGE_SIZE] = {0};
+        result[0] = EVENT_DIGITAL_INTERRUPT;
+        bool need_send = false;
+        for (int i = 0; i < MAX_INTERRUPT_NUMBER; i++)
+        {
+            if (interruprHandler[i].has_triggered())
+            {
+                need_send = true;
+                result[1 + i] = 1;
+                interruprHandler[i].triggered = false;
+            }
+        }
+        if (need_send)
+        {
+            send_message(result, sizeof(result));
+        }
+        return true;
     }
     void hex_dump(const uint8_t *data, uint32_t length)
     {
@@ -125,6 +170,53 @@ public:
             reply_length = CMD_DIGITAL_READ_RL;
             break;
         }
+
+        case CMD_DIGITAL_ATTACH_INTERRUPT:
+        {
+            uint8_t id = message[1];
+            uint8_t pin = message[2];
+            uint8_t mode = message[3];
+            if (id >= MAX_INTERRUPT_NUMBER)
+            {
+                result[0] = 0x00;
+                reply_length = CMD_DIGITAL_ATTACH_INTERRUPT_RL;
+            }
+            else
+            {
+                if (interruprHandler[id].attached)
+                {
+                    debug_printf("pin %d has attached, detach it.\n", interruprHandler[id].pin);
+                    detachInterrupt(interruprHandler[id].pin);
+                }
+                interruprHandler[id].attached = true;
+                interruprHandler[id].pin = pin;
+                interruprHandler[id].triggered = false;
+                callback_function_t callback = std::bind(&InterruptHandler::handler, &(interruprHandler[id]));
+                attachInterrupt(pin, callback, mode);
+                result[0] = 0x01;
+                reply_length = CMD_DIGITAL_ATTACH_INTERRUPT_RL;
+            }
+            break;
+        }
+        case CMD_DIGITAL_DETACH_INTERRUPT:
+        {
+            uint8_t id = message[1];
+            if (id >= MAX_INTERRUPT_NUMBER)
+            {
+                result[0] = 0x00;
+                reply_length = CMD_DIGITAL_DETACH_INTERRUPT_RL;
+            }
+            else
+            {
+                detachInterrupt(interruprHandler[id].pin);
+                interruprHandler[id].attached = false;
+                interruprHandler[id].triggered = false;
+                result[0] = 0x01;
+                reply_length = CMD_DIGITAL_DETACH_INTERRUPT_RL;
+            }
+            break;
+        }
+
         case CMD_WIRE_BEGIN:
         {
             uint8_t sda = message[1];
