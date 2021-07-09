@@ -275,6 +275,7 @@ public:
             // SPI.setSCLK(sclk);
             // SPI.begin();
             // SPI.end();
+            // TODO: may need to call SPI.end(), but will fail.
             SPI.begin(sclk, miso, mosi);
             result[0] = 0x01;
             reply_length = CMD_SPI_BEGIN_RL;
