@@ -31,6 +31,7 @@ void setup()
   WiFi.mode(WIFI_STA);
   //reset settings - wipe credentials for testing
   //wm.resetSettings();
+  wm.setConnectTimeout(10);
   wm.setConfigPortalBlocking(false);
   //automatically connect using saved credentials if they exist
   //If connection fails it starts an access point with the specified name
