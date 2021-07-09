@@ -12,6 +12,11 @@ HardwareSerial SerialJlink(1);
 
 ArduinoMessage messager(&SerialComm, &SerialDebug);
 
+/*
+Change in Wire.h
+#define I2C_BUFFER_LENGTH 256 
+*/
+
 void setup()
 {
   SerialDebug.begin(115200);
