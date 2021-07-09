@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "ArduinoMessage.h"
 #include <WifiManager.h>
+#include "SimpleHttpClient.h"
 
 const int led = LED_BUILTIN;
 
@@ -15,6 +16,8 @@ HardwareSerial SerialJlink(1);
 
 ArduinoMessage messager(&SerialComm, &SerialDebug);
 
+SimpleHttpClient httpClient;
+
 /*
 Change in Wire.h
 #define I2C_BUFFER_LENGTH 256 
@@ -24,7 +27,7 @@ void setup()
 {
   SerialDebug.begin(115200);
   SerialComm.setRxBufferSize(4096);
-  SerialComm.begin(921600, SERIAL_8N1, 27, 26);
+  SerialComm.begin(115200, SERIAL_8N1, 27, 26);
   pinMode(led, OUTPUT);
 
   // explicitly set mode, esp defaults to STA+AP
@@ -43,6 +46,7 @@ void setup()
   {
     Serial.println("Configportal running");
   }
+  httpClient.begin();
 }
 
 uint32_t last = millis();
@@ -72,5 +76,9 @@ void loop()
     led_status = 1 - led_status;
     // SerialDebug.println(millis());
     // SerialComm.println(millis());
+    // if (WiFi.status() == WL_CONNECTED)
+    // {
+    //   httpClient.self_test();
+    // }
   }
 }

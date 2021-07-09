@@ -4,6 +4,7 @@
 #include "Wire.h"
 #include "SPI.h"
 #include <FunctionalInterrupt.h>
+#include "SimpleHttpClient.h"
 
 class InterruptHandler
 {
@@ -371,6 +372,28 @@ public:
                 result[0] = 0x00;
                 reply_length = 1 + data_length;
             }
+            break;
+        }
+
+        case CMD_NETWORK_IS_CONNECTED:
+        {
+            auto status = WiFi.status();
+            result[0] = status == WL_CONNECTED ? 1 : 0;
+            reply_length = CMD_NETWORK_IS_CONNECTED_RL;
+            break;
+        }
+
+        case CMD_HTTP_GET:
+        {
+            const char *url = (const char *)(message + 1);
+            uint8_t buffer[MAX_DECODED_MESSAGE_SIZE - 4] = {0};
+            auto httpResult = httpClient.http_get(url, buffer, sizeof(buffer));
+            result[0] = (httpResult.code >> 8) & 0xFF;
+            result[1] = httpResult.code & 0xFF;
+            result[2] = (httpResult.data_length) >> 8 & 0xFF;
+            result[3] = httpResult.data_length & 0xFF;
+            memcpy(result + 4, buffer, sizeof(buffer));
+            reply_length = MAX_DECODED_MESSAGE_SIZE;
             break;
         }
 
